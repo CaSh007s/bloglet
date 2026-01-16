@@ -13,26 +13,43 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
+import { Github } from "lucide-react";
 
 export default function AuthButton() {
   const supabase = createClient();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in on mount
   useEffect(() => {
     const getUser = async () => {
       const {
         data: { user },
+        error,
       } = await supabase.auth.getUser();
-      setUser(user);
+      if (user) {
+        console.log("User found:", user);
+        setUser(user);
+      }
+      setLoading(false);
     };
+
     getUser();
-  }, [supabase]);
+
+    // Listen for auth state changes (login/logout) in real-time
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (_event === "SIGNED_OUT") {
+        router.refresh(); // Refresh server components
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase, router]);
 
   const handleLogin = async () => {
-    // For now, let's just use GitHub OAuth as the quickest test
-    // We will build the full login page next
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
@@ -43,13 +60,22 @@ export default function AuthButton() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.refresh();
     setUser(null);
+    router.refresh();
   };
+
+  if (loading) {
+    return (
+      <Button variant="ghost" disabled>
+        ...
+      </Button>
+    );
+  }
 
   if (!user) {
     return (
-      <Button onClick={handleLogin} variant="outline">
+      <Button onClick={handleLogin} variant="outline" className="gap-2">
+        <Github className="h-4 w-4" />
         Login with GitHub
       </Button>
     );
@@ -60,9 +86,13 @@ export default function AuthButton() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.user_metadata.avatar_url} alt="User" />
+            {/* Try both standard metadata locations */}
+            <AvatarImage
+              src={user.user_metadata.avatar_url || user.user_metadata.avatar}
+              alt={user.user_metadata.full_name || "User"}
+            />
             <AvatarFallback>
-              {user.email?.charAt(0).toUpperCase()}
+              {user.email?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -71,7 +101,7 @@ export default function AuthButton() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.user_metadata.full_name}
+              {user.user_metadata.full_name || user.user_metadata.user_name}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}

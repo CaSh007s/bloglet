@@ -296,6 +296,12 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
+[auth.external.github]
+enabled = true
+client_id = "Ov23liatF0yAcC9OXDYf"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_SECRET)"
+redirect_uri = ""  # Optional: Leave blank or set to your app's callback if needed beyond default
+
 [auth.external.apple]
 enabled = false
 client_id = ""
