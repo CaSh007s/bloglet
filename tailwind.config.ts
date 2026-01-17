@@ -1,9 +1,9 @@
 import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 const config = {
-  // Fix 1: Change ["class"] to just "class"
-  darkMode: "class",
+  darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -64,8 +64,6 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      // ... keep existing keyframes/animations if you want,
-      // but shadcn usually handles them. I'll leave them basic here:
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -82,8 +80,7 @@ const config = {
       },
     },
   },
-  // Fix 2: Use import instead of require
-  plugins: [animate],
+  plugins: [animate, typography],
 } satisfies Config;
 
 export default config;

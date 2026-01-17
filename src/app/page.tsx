@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
       <h1 className="text-6xl font-display font-bold tracking-tighter">
@@ -13,11 +19,25 @@ export default function Home() {
       </p>
 
       <div className="flex items-center gap-4 pt-4">
-        <Link href="/write">
-          <Button size="lg" className="h-12 px-8 text-base">
-            Start Writing
-          </Button>
-        </Link>
+        {user ? (
+          // OPTION A: User is Logged In -> Show "Start Writing"
+          <Link href="/write">
+            <Button size="lg" className="h-12 px-8 text-base">
+              Start Writing
+            </Button>
+          </Link>
+        ) : (
+          <Link href="/login">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="h-12 px-8 text-base"
+            >
+              Get Started
+            </Button>
+          </Link>
+        )}
+
         <Button variant="outline" size="lg" className="h-12 px-8 text-base">
           Read Trending
         </Button>
