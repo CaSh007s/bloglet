@@ -1,82 +1,94 @@
-"use client"; // Needs to be client for inputs/preview
+"use client";
 
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
+import { useSearchParams, useRouter } from "next/navigation";
 
-export default function WritePage() {
+function Editor() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // State for the form
+  const initialSlug = searchParams.get("slug");
+  const [isFetching, setIsFetching] = useState(!!initialSlug);
+
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Handle saving
-  const handleSave = async () => {
-    console.log("Save button clicked"); // Check browser console
-    setLoading(true);
+  // 1. Load Data if editing
+  useEffect(() => {
+    const editSlug = searchParams.get("slug");
 
-    // 1. Check User
+    if (editSlug) {
+      const fetchPost = async () => {
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("slug", editSlug)
+          .single();
+
+        if (data) {
+          setTitle(data.title);
+          setSlug(data.slug);
+          setContent(data.content || "");
+        }
+        setIsFetching(false);
+      };
+      fetchPost();
+    }
+  }, [searchParams, supabase]);
+
+  const handleSave = async () => {
+    setLoading(true);
     const {
       data: { user },
-      error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (!user) {
+      alert("Please login first");
       setLoading(false);
-      alert(
-        "Error: You are not logged in! " +
-          (authError?.message || "No user found")
-      );
       return;
     }
 
-    console.log("User found:", user.id);
-
-    // 2. Validate Data
-    if (!title || !slug) {
-      setLoading(false);
-      alert("Error: Title and Slug are required!");
-      return;
-    }
-
-    // 3. Attempt Save
-    console.log("Attempting upsert...");
-    const { data, error } = await supabase
-      .from("posts")
-      .upsert(
-        {
-          title,
-          slug,
-          content,
-          author_id: user.id,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "author_id, slug" }
-      ) // Columns must match the Unique Constraint exactly
-      .select();
+    const { error } = await supabase.from("posts").upsert(
+      {
+        title,
+        slug,
+        content,
+        author_id: user.id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "author_id, slug" },
+    );
 
     setLoading(false);
 
     if (error) {
-      console.error("Supabase Error:", error);
-      alert(
-        "Database Error: " + error.message + " (Check console for details)"
-      );
+      alert("Error: " + error.message);
     } else {
-      console.log("Success Data:", data);
-      alert("Saved Successfully! 💾");
+      alert("Saved!");
+      if (!searchParams.get("slug")) {
+        router.push(`/write?slug=${slug}`);
+      }
     }
   };
 
+  if (isFetching) {
+    return (
+      <div className="flex h-screen items-center justify-center text-muted-foreground">
+        Loading editor...
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto py-8 h-[calc(100vh-100px)] flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-display font-bold">Editor</h1>
         <div className="flex gap-2">
@@ -128,5 +140,14 @@ export default function WritePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Wrap in Suspense boundary
+export default function WritePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Editor />
+    </Suspense>
   );
 }
