@@ -4,8 +4,9 @@ import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
+import LikeButton from "@/components/like-button";
 
-// Define strict types for our data
+// 1. Types
 interface Post {
   id: string;
   title: string;
@@ -30,16 +31,16 @@ export default async function BlogPostPage({
   const { username, slug } = await params;
   const supabase = await createClient();
 
+  // 2. Fetch Author
   const { data: author } = await supabase
     .from("profiles")
     .select("*")
     .eq("username", username)
     .single();
 
-  if (!author) {
-    return notFound();
-  }
+  if (!author) return notFound();
 
+  // 3. Fetch Post
   const { data: post } = await supabase
     .from("posts")
     .select("*")
@@ -48,11 +49,11 @@ export default async function BlogPostPage({
     .eq("published", true)
     .single();
 
+  // 4. Draft Security Logic
   if (!post) {
     const {
       data: { user: currentUser },
     } = await supabase.auth.getUser();
-    // Allow author to preview their own draft
     if (currentUser?.id === author.id) {
       const { data: draft } = await supabase
         .from("posts")
@@ -62,26 +63,48 @@ export default async function BlogPostPage({
         .single();
 
       if (draft) {
-        return <RenderPost post={draft} author={author} isDraft={true} />;
+        const { count: likeCount } = await supabase
+          .from("likes")
+          .select("*", { count: "exact", head: true })
+          .eq("post_id", draft.id);
+
+        return (
+          <RenderPost
+            post={draft}
+            author={author}
+            isDraft={true}
+            likeCount={likeCount || 0}
+          />
+        );
       }
     }
     return notFound();
   }
 
-  return <RenderPost post={post} author={author} />;
+  // 5. Fetch Like Count
+  const { count: likeCount } = await supabase
+    .from("likes")
+    .select("*", { count: "exact", head: true })
+    .eq("post_id", post.id);
+
+  return <RenderPost post={post} author={author} likeCount={likeCount || 0} />;
 }
 
 function RenderPost({
   post,
   author,
   isDraft = false,
+  likeCount = 0,
 }: {
   post: Post;
   author: Author;
   isDraft?: boolean;
+  likeCount?: number;
 }) {
   return (
     <article className="max-w-3xl mx-auto py-12 px-4">
+      {/* Banner is gone! */}
+
       {isDraft && (
         <div className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 p-4 rounded-lg mb-8 text-center">
           This is a private draft. Only you can see this.
@@ -122,6 +145,9 @@ function RenderPost({
       <hr className="my-12 border-muted" />
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground">Thanks for reading.</p>
+        <div className="flex items-center gap-4">
+          <LikeButton postId={post.id} initialCount={likeCount} />
+        </div>
       </div>
     </article>
   );
