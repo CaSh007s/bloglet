@@ -2,9 +2,25 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
+
+// Define strict types for our data
+interface Post {
+  id: string;
+  title: string;
+  content: string | null;
+  created_at: string;
+  slug: string;
+  published: boolean;
+}
+
+interface Author {
+  id: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
 
 export default async function BlogPostPage({
   params,
@@ -14,7 +30,6 @@ export default async function BlogPostPage({
   const { username, slug } = await params;
   const supabase = await createClient();
 
-  // 1. Get the Author ID from the username
   const { data: author } = await supabase
     .from("profiles")
     .select("*")
@@ -22,10 +37,9 @@ export default async function BlogPostPage({
     .single();
 
   if (!author) {
-    return notFound(); // Show 404 if user doesn't exist
+    return notFound();
   }
 
-  // 2. Get the Post
   const { data: post } = await supabase
     .from("posts")
     .select("*")
@@ -38,6 +52,7 @@ export default async function BlogPostPage({
     const {
       data: { user: currentUser },
     } = await supabase.auth.getUser();
+    // Allow author to preview their own draft
     if (currentUser?.id === author.id) {
       const { data: draft } = await supabase
         .from("posts")
@@ -56,14 +71,13 @@ export default async function BlogPostPage({
   return <RenderPost post={post} author={author} />;
 }
 
-// Helper Component to render the UI
 function RenderPost({
   post,
   author,
   isDraft = false,
 }: {
-  post: any;
-  author: any;
+  post: Post;
+  author: Author;
   isDraft?: boolean;
 }) {
   return (
@@ -74,7 +88,6 @@ function RenderPost({
         </div>
       )}
 
-      {/* Header */}
       <header className="mb-10 space-y-6">
         <div className="flex items-center gap-3 text-muted-foreground text-sm">
           <Link
@@ -82,7 +95,7 @@ function RenderPost({
             className="flex items-center gap-2 hover:text-foreground transition-colors"
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage src={author.avatar_url} />
+              <AvatarImage src={author.avatar_url || ""} />
               <AvatarFallback>
                 {author.username[0].toUpperCase()}
               </AvatarFallback>
@@ -90,7 +103,11 @@ function RenderPost({
             <span>{author.full_name || author.username}</span>
           </Link>
           <span>•</span>
-          <time>{new Date(post.created_at).toLocaleDateString()}</time>
+          <time className="capitalize">
+            {formatDistanceToNow(new Date(post.created_at), {
+              addSuffix: true,
+            })}
+          </time>
         </div>
 
         <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight leading-tight">
@@ -98,12 +115,10 @@ function RenderPost({
         </h1>
       </header>
 
-      {/* The Content */}
       <div className="prose dark:prose-invert prose-lg max-w-none prose-headings:font-display prose-a:text-primary">
-        <ReactMarkdown>{post.content}</ReactMarkdown>
+        <ReactMarkdown>{post.content || ""}</ReactMarkdown>
       </div>
 
-      {/* Footer */}
       <hr className="my-12 border-muted" />
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground">Thanks for reading.</p>

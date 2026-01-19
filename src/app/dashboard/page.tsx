@@ -10,7 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PenSquare, Eye, Trash2 } from "lucide-react"; // Make sure lucide-react is installed
+import { PenSquare, Eye, Trash2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -70,7 +71,11 @@ export default async function DashboardPage() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
                   <span>/{post.slug}</span>
                   <span>•</span>
-                  <span>{new Date(post.updated_at).toLocaleDateString()}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(post.updated_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
                 </div>
               </div>
 
@@ -82,12 +87,12 @@ export default async function DashboardPage() {
                   </Button>
                 </Link>
 
-                {/* View Button (Only if published, but we'll leave it disabled for now) */}
+                {/* View Button */}
                 <Button variant="ghost" size="icon" disabled={!post.published}>
                   <Eye className="h-4 w-4" />
                 </Button>
 
-                {/* Delete Button (Visual only for now) */}
+                {/* Delete Button */}
                 <Button
                   variant="ghost"
                   size="icon"
