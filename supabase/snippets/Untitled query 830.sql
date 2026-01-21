@@ -1,2 +1,2 @@
-alter table profiles 
-add column if not exists bio text;
+alter table posts 
+add column tags text[] default '{}';

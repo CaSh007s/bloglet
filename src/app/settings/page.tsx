@@ -7,7 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, Save, Globe, User } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  Save,
+  Globe,
+  User,
+  AlertCircle,
+} from "lucide-react";
 
 const AVATAR_STYLE = "notionists";
 
@@ -18,7 +25,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Profile Fields
+  // Fields
+  const [originalUsername, setOriginalUsername] = useState("");
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
@@ -26,7 +34,10 @@ export default function SettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [seed, setSeed] = useState("");
 
-  // 1. Fetch current profile
+  // Validation State
+  const [usernameError, setUsernameError] = useState("");
+
+  // 1. Fetch Profile
   useEffect(() => {
     const getProfile = async () => {
       const {
@@ -44,6 +55,7 @@ export default function SettingsPage() {
         .single();
 
       if (data) {
+        setOriginalUsername(data.username || "");
         setUsername(data.username || "");
         setFullName(data.full_name || "");
         setBio(data.bio || "");
@@ -61,7 +73,6 @@ export default function SettingsPage() {
     getProfile();
   }, [router, supabase]);
 
-  // 2. Randomize Avatar
   const handleRandomize = () => {
     const newSeed = Math.random().toString(36).substring(7);
     setSeed(newSeed);
@@ -70,18 +81,46 @@ export default function SettingsPage() {
     );
   };
 
-  // 3. Save Changes
+  // 2. Save Logic with Username Check
   const handleSave = async () => {
+    setUsernameError("");
     setSaving(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) return;
 
+    // A. Check Username Uniqueness
+    const cleanUsername = username
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "");
+
+    if (cleanUsername !== originalUsername) {
+      if (cleanUsername.length < 3) {
+        setUsernameError("Username must be at least 3 chars.");
+        setSaving(false);
+        return;
+      }
+
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", cleanUsername)
+        .single();
+
+      if (existing) {
+        setUsernameError("Sorry, that username is already taken.");
+        setSaving(false);
+        return;
+      }
+    }
+
+    // B. Update Profile
     const { error } = await supabase
       .from("profiles")
       .update({
+        username: cleanUsername,
         full_name: fullName,
         bio: bio,
         website: website,
@@ -93,19 +132,20 @@ export default function SettingsPage() {
     if (error) {
       alert("Error saving profile: " + error.message);
     } else {
+      setOriginalUsername(cleanUsername);
+      setUsername(cleanUsername);
       router.refresh();
       alert("Profile updated successfully!");
     }
     setSaving(false);
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className="flex h-screen items-center justify-center">
         Loading settings...
       </div>
     );
-  }
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
@@ -114,39 +154,36 @@ export default function SettingsPage() {
       <div className="space-y-8">
         {/* Avatar Section */}
         <div className="bg-muted/30 p-6 rounded-xl border border-border">
-          <Label className="text-lg font-bold mb-4 block">
-            Choose your Avatar
-          </Label>
+          <Label className="text-lg font-bold mb-4 block">Identity</Label>
           <div className="flex items-center gap-6">
-            <div className="h-32 w-32 rounded-full overflow-hidden border-4 border-background shadow-lg bg-white shrink-0">
+            <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-background shadow-sm bg-white shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={
                   avatarUrl ||
                   `https://api.dicebear.com/9.x/${AVATAR_STYLE}/svg?seed=${seed}`
                 }
-                alt="Avatar Preview"
+                alt="Avatar"
                 className="h-full w-full object-cover"
               />
             </div>
-
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Click randomize until you find a face that matches your vibe.
-              </p>
+            <div>
               <Button
                 onClick={handleRandomize}
                 variant="outline"
-                className="gap-2"
+                size="sm"
+                className="gap-2 mb-2"
               >
-                <RefreshCw className="h-4 w-4" />
-                Randomize Look
+                <RefreshCw className="h-3.5 w-3.5" /> Randomize Avatar
               </Button>
+              <p className="text-xs text-muted-foreground">
+                Click until you find your vibe.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Identity Section */}
+        {/* Form Fields */}
         <div className="grid gap-6">
           <div className="grid gap-2">
             <Label htmlFor="username">Username</Label>
@@ -155,13 +192,20 @@ export default function SettingsPage() {
               <Input
                 id="username"
                 value={username}
-                disabled
-                className="pl-9 bg-muted text-muted-foreground cursor-not-allowed"
+                onChange={(e) => setUsername(e.target.value)}
+                className={`pl-9 ${usernameError ? "border-red-500" : ""}`}
+                placeholder="username"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Username cannot be changed.
-            </p>
+            {usernameError ? (
+              <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {usernameError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                This will be your unique URL handle.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -170,7 +214,6 @@ export default function SettingsPage() {
               id="fullname"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Gandalf the Grey"
             />
           </div>
 
@@ -180,7 +223,6 @@ export default function SettingsPage() {
               id="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell the world a little about yourself..."
               className="resize-none h-24"
             />
           </div>
@@ -193,14 +235,12 @@ export default function SettingsPage() {
                 id="website"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://your-portfolio.com"
                 className="pl-9"
               />
             </div>
           </div>
         </div>
 
-        {/* Save Button */}
         <div className="flex justify-end pt-4 border-t">
           <Button
             onClick={handleSave}
@@ -212,7 +252,7 @@ export default function SettingsPage() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Save Changes" : "Save Changes"}
           </Button>
         </div>
       </div>
