@@ -1,113 +1,114 @@
-"use client";
-
+import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEffect, useState } from "react";
-import { User } from "@supabase/supabase-js";
-import { Github, LayoutDashboard } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Settings, User, LogOut, PenTool } from "lucide-react";
 
-export default function AuthButton() {
-  const supabase = createClient();
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-      }
-      setLoading(false);
-    };
-
-    getUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (_event === "SIGNED_OUT") {
-        router.refresh();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, router]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    router.refresh();
-  };
-
-  if (loading) {
-    return (
-      <Button variant="ghost" disabled>
-        ...
-      </Button>
-    );
-  }
+export default async function AuthButton() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return (
       <Link href="/login">
-        <Button variant="default" className="gap-2">
-          Login
+        <Button variant="default" className="rounded-full px-6">
+          Sign In
         </Button>
       </Link>
     );
   }
 
+  // Fetch the REAL profile data (Avatar + Username)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  const username = profile?.username || "User";
+  const avatarUrl = profile?.avatar_url || user.user_metadata.avatar_url;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+          <Avatar className="h-10 w-10 border border-border">
             <AvatarImage
-              src={user.user_metadata.avatar_url || user.user_metadata.avatar}
-              alt={user.user_metadata.full_name || "User"}
+              src={avatarUrl}
+              alt={username}
+              className="object-cover"
             />
-            <AvatarFallback>
-              {user.email?.charAt(0).toUpperCase() || "U"}
-            </AvatarFallback>
+            <AvatarFallback>{username[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.user_metadata.full_name || user.user_metadata.user_name}
+              {profile?.full_name || username}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              @{username}
             </p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
 
-        <div className="p-1">
-          <Link href="/dashboard" className="w-full cursor-default">
-            <DropdownMenuItem className="cursor-pointer">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Dashboard
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link
+              href="/write"
+              className="w-full cursor-pointer flex items-center"
+            >
+              <PenTool className="mr-2 h-4 w-4" />
+              Write a Story
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              href={`/${username}`}
+              className="w-full cursor-pointer flex items-center"
+            >
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              href="/settings"
+              className="w-full cursor-pointer flex items-center"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <form action="/auth/signout" method="post">
+          <button className="w-full">
+            <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
             </DropdownMenuItem>
-          </Link>
-        </div>
-
-        <DropdownMenuItem onClick={handleSignOut}>Log out</DropdownMenuItem>
+          </button>
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );
