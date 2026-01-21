@@ -2,7 +2,7 @@ import Link from "next/link";
 import AuthButton from "./auth-button";
 import { ModeToggle } from "./mode-toggle";
 import { Button } from "@/components/ui/button";
-import { Feather, PenLine } from "lucide-react";
+import { Feather, PenLine, Search } from "lucide-react";
 
 export default function Navbar() {
   return (
@@ -23,6 +23,16 @@ export default function Navbar() {
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 md:gap-4">
           {/* Write Button */}
+          <Link href="/search">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          </Link>
+
           <Link href="/write">
             <Button className="hidden md:flex gap-2 font-semibold shadow-sm rounded-full px-6">
               <PenLine className="h-4 w-4" />

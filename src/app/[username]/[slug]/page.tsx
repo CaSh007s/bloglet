@@ -150,12 +150,13 @@ function RenderPost({
         {post.tags && post.tags.length > 0 && (
           <div className="flex gap-2">
             {post.tags.map((tag) => (
-              <span
+              <Link
                 key={tag}
+                href={`/tags/${tag}`}
                 className="bg-secondary text-secondary-foreground px-2.5 py-1 rounded-md text-xs font-medium"
               >
                 #{tag}
-              </span>
+              </Link>
             ))}
           </div>
         )}
