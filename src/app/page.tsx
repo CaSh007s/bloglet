@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { calculateReadTime } from "@/utils/read-time";
 import { Clock } from "lucide-react";
+import LandingPage from "@/components/landing-page";
 import { getExcerpt } from "@/utils/format-content";
 
 export const revalidate = 0;
@@ -26,7 +27,15 @@ interface FeedPost {
 
 export default async function Home() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  // 2. USER MODE: Show Feed
   const { data } = await supabase
     .from("posts")
     .select(
@@ -51,7 +60,7 @@ export default async function Home() {
             href={`/${post.profiles.username}/${post.slug}`}
             className="group flex flex-col md:flex-row gap-6 p-6 rounded-xl border border-border/40 bg-card hover:border-primary/50 transition-all duration-300 hover:bg-muted/5"
           >
-            {/* 1. Text Content */}
+            {/* Text Side */}
             <div className="flex-1 flex flex-col justify-center">
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                 <Avatar className="h-5 w-5 border border-border">
@@ -82,7 +91,6 @@ export default async function Home() {
                 {getExcerpt(post.content, 200)}
               </p>
 
-              {/* Tags (Only show if there's space, or keep them small) */}
               {post.tags && post.tags.length > 0 && (
                 <div className="flex gap-2">
                   {post.tags.slice(0, 3).map((t) => (
@@ -97,7 +105,7 @@ export default async function Home() {
               )}
             </div>
 
-            {/* 2. Thumbnail (Right Side) */}
+            {/* Image Side */}
             {post.cover_image && (
               <div className="w-full md:w-48 h-48 md:h-32 shrink-0 rounded-lg overflow-hidden border border-border/50 order-first md:order-last">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

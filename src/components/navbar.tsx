@@ -3,8 +3,50 @@ import AuthButton from "./auth-button";
 import { ModeToggle } from "./mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Feather, PenLine, Search } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <nav className="fixed top-0 z-50 w-full transition-all duration-300">
+        <div className="flex h-20 items-center justify-between px-8 max-w-7xl mx-auto">
+          {/* Logo */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-display text-2xl font-bold tracking-tighter text-white hover:text-white/80 transition-colors"
+          >
+            <div className="bg-white/10 p-2 rounded-lg backdrop-blur-md border border-white/10">
+              <Feather className="h-5 w-5" />
+            </div>
+            <span>Bloglet.</span>
+          </Link>
+
+          {/* Guest Actions */}
+          <div className="flex items-center gap-4">
+            <Link href="/login">
+              <Button
+                variant="ghost"
+                className="text-white hover:bg-white/10 hover:text-white"
+              >
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button className="rounded-full bg-white text-black hover:bg-gray-200">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-8 max-w-7xl mx-auto">
@@ -22,7 +64,6 @@ export default function Navbar() {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Write Button */}
           <Link href="/search">
             <Button
               variant="ghost"

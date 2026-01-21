@@ -4,14 +4,6 @@
 
 @layer base {
   :root {
-    /* LIGHT THEME 
-      Background: #fafaf9 (Warm off-white)
-      Surface: #ffffff
-      Border: #e7e5e4
-      Text primary: #1c1917
-      Text muted: #78716c
-      Accent: #2563eb (Muted blue)
-    */
     --background: 60 9% 98%;
     --foreground: 24 6% 10%;
 
@@ -21,11 +13,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 24 6% 10%;
 
-    /* Primary is your "Accent" Blue */
     --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%; /* White text on Blue */
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary is a subtle surface color (based on border/muted) */
+    /* Secondary is a subtle surface color*/
     --secondary: 60 5% 96%;
     --secondary-foreground: 24 6% 10%;
 
@@ -46,14 +37,6 @@
   }
 
   .dark {
-    /* DARK THEME
-      Background: #141414
-      Surface: #1c1c1c
-      Border: #2a2a2a
-      Text primary: #f5f5f5
-      Text muted: #a3a3a3
-      Accent: #f59e0b (Amber)
-    */
     --background: 0 0% 8%;
     --foreground: 0 0% 96%;
 
@@ -63,9 +46,8 @@
     --popover: 0 0% 11%;
     --popover-foreground: 0 0% 96%;
 
-    /* Primary is your "Accent" Amber */
     --primary: 38 92% 50%;
-    --primary-foreground: 0 0% 0%; /* Black text on Amber for contrast */
+    --primary-foreground: 0 0% 0%;
 
     /* Secondary uses the Border color for subtle backgrounds */
     --secondary: 0 0% 16.5%;
