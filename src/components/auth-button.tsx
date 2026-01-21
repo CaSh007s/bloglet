@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings, User, LogOut, PenTool } from "lucide-react";
+import { Settings, User, LogOut, Library } from "lucide-react";
 
 export default async function AuthButton() {
   const supabase = await createClient();
@@ -29,7 +29,7 @@ export default async function AuthButton() {
     );
   }
 
-  // Fetch the REAL profile data (Avatar + Username)
+  // Fetch the REAL profile data
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
@@ -70,21 +70,21 @@ export default async function AuthButton() {
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link
-              href="/write"
-              className="w-full cursor-pointer flex items-center"
-            >
-              <PenTool className="mr-2 h-4 w-4" />
-              Write a Story
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link
               href={`/${username}`}
               className="w-full cursor-pointer flex items-center"
             >
               <User className="mr-2 h-4 w-4" />
               Profile
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              href="/bookmarks"
+              className="w-full cursor-pointer flex items-center"
+            >
+              <Library className="mr-2 h-4 w-4" />
+              Library
             </Link>
           </DropdownMenuItem>
 
