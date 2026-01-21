@@ -1,16 +1,21 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
+import { calculateReadTime } from "@/utils/read-time";
+import { Clock } from "lucide-react";
 
-// 1. Define the shape of our data
-interface PostWithAuthor {
+export const revalidate = 0;
+
+interface FeedPost {
   id: string;
   title: string;
   slug: string;
   created_at: string;
+  content: string | null;
+  published: boolean;
+  tags: string[] | null;
+  cover_image: string | null;
   profiles: {
     username: string;
     full_name: string | null;
@@ -20,97 +25,91 @@ interface PostWithAuthor {
 
 export default async function Home() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  const { data: posts } = await supabase
+  const { data } = await supabase
     .from("posts")
     .select(
       `
-      *,
-      profiles (
-        username,
-        full_name,
-        avatar_url
-      )
+      id, title, slug, created_at, content, published, tags, cover_image,
+      profiles ( username, full_name, avatar_url )
     `,
     )
     .eq("published", true)
-    .order("created_at", { ascending: false })
-    .limit(6);
+    .order("created_at", { ascending: false });
+
+  const posts = (data || []) as unknown as FeedPost[];
 
   return (
-    <div className="flex flex-col min-h-screen pb-20">
-      {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center py-24 text-center space-y-6 bg-background">
-        <h1 className="text-6xl font-display font-bold tracking-tighter">
-          Write without noise.
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-[600px] leading-relaxed">
-          Bloglet is a minimalist publishing platform for developers. Markdown
-          support, distraction-free reading, and owning your data.
-        </p>
+    <div className="max-w-4xl mx-auto py-12 px-6">
+      <h1 className="text-4xl font-display font-bold mb-12">Latest Stories</h1>
 
-        <div className="flex items-center gap-4 pt-4">
-          <Link href={user ? "/write" : "/login"}>
-            <Button size="lg" className="h-12 px-8 text-base">
-              {user ? "Start Writing" : "Get Started"}
-            </Button>
-          </Link>
-        </div>
-      </section>
+      <div className="grid gap-6">
+        {posts.map((post) => (
+          <Link
+            key={post.id}
+            href={`/${post.profiles.username}/${post.slug}`}
+            className="group flex flex-col md:flex-row gap-6 p-6 rounded-xl border border-border/40 bg-card hover:border-primary/50 transition-all duration-300 hover:bg-muted/5"
+          >
+            {/* 1. Text Content */}
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                <Avatar className="h-5 w-5 border border-border">
+                  <AvatarImage src={post.profiles.avatar_url || ""} />
+                  <AvatarFallback>{post.profiles.username[0]}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium text-foreground">
+                  {post.profiles.full_name || post.profiles.username}
+                </span>
+                <span>•</span>
+                <span>
+                  {formatDistanceToNow(new Date(post.created_at), {
+                    addSuffix: true,
+                  })}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {calculateReadTime(post.content)}
+                </span>
+              </div>
 
-      {/* Global Feed Section */}
-      <section className="max-w-5xl mx-auto w-full px-6">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-display font-bold">Freshly Published</h2>
-        </div>
+              <h2 className="text-xl md:text-2xl font-bold mb-3 group-hover:text-primary transition-colors leading-tight">
+                {post.title}
+              </h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {!posts || posts.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-              No stories have been published yet. Be the first!
+              <p className="text-muted-foreground text-sm line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">
+                {post.content?.slice(0, 200).replace(/[#*`]/g, "")}...
+              </p>
+
+              {/* Tags (Only show if there's space, or keep them small) */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex gap-2">
+                  {post.tags.slice(0, 3).map((t) => (
+                    <span
+                      key={t}
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground uppercase tracking-wide opacity-80"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-            posts.map((post: PostWithAuthor) => (
-              <Link
-                key={post.id}
-                href={`/${post.profiles.username}/${post.slug}`}
-              >
-                <Card className="h-full hover:bg-muted/50 transition-colors border-none shadow-none ring-1 ring-border flex flex-col">
-                  <CardHeader>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={post.profiles.avatar_url || ""} />
-                        <AvatarFallback>
-                          {post.profiles.username[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-muted-foreground font-medium">
-                        {post.profiles.full_name || post.profiles.username}
-                      </span>
-                    </div>
-                    <CardTitle className="font-display text-xl leading-tight">
-                      {post.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col justify-end">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-4">
-                      <span>
-                        {formatDistanceToNow(new Date(post.created_at), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                      <span>Read article →</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))
-          )}
-        </div>
-      </section>
+
+            {/* 2. Thumbnail (Right Side) */}
+            {post.cover_image && (
+              <div className="w-full md:w-48 h-48 md:h-32 shrink-0 rounded-lg overflow-hidden border border-border/50 order-first md:order-last">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={post.cover_image}
+                  alt={post.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            )}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

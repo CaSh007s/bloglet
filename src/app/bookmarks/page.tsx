@@ -2,10 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BookmarkX } from "lucide-react"; // Changed icon
+import { BookmarkX, Calendar } from "lucide-react";
 
-// Define the shape of our data
 interface BookmarkItem {
   post_id: string;
   created_at: string;
@@ -16,6 +14,7 @@ interface BookmarkItem {
     created_at: string;
     content: string | null;
     published: boolean;
+    cover_image: string | null;
     profiles: {
       username: string;
       full_name: string | null;
@@ -27,40 +26,25 @@ interface BookmarkItem {
 export default async function BookmarksPage() {
   const supabase = await createClient();
 
-  // 1. Check Auth
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  // 2. Fetch Bookmarked Posts
   const { data } = await supabase
     .from("bookmarks")
     .select(
       `
-      post_id,
-      created_at,
+      post_id, created_at,
       posts (
-        id,
-        title,
-        slug,
-        created_at,
-        content,
-        published,
-        profiles (
-          username,
-          full_name,
-          avatar_url
-        )
+        id, title, slug, created_at, content, published, cover_image,
+        profiles ( username, full_name, avatar_url )
       )
     `,
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  // Cast data safely
   const bookmarks = (data || []) as unknown as BookmarkItem[];
 
   return (
@@ -80,41 +64,43 @@ export default async function BookmarksPage() {
         <div className="grid gap-6">
           {bookmarks.map((item) => {
             const post = item.posts;
-            if (!post) return null; // Handle if post was deleted
+            if (!post) return null;
 
             return (
               <Link
                 key={item.post_id}
                 href={`/${post.profiles.username}/${post.slug}`}
-                className="group block p-6 rounded-xl border border-border/50 bg-card hover:border-primary/50 transition-all duration-300"
+                className="group flex flex-col md:flex-row gap-6 p-6 rounded-xl border border-border/40 bg-card hover:border-primary/50 transition-all duration-300 hover:bg-muted/5"
               >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                      <Avatar className="h-5 w-5">
-                        <AvatarImage src={post.profiles.avatar_url || ""} />
-                        <AvatarFallback>
-                          {post.profiles.username[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>
-                        {post.profiles.full_name || post.profiles.username}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        Saved {formatDistanceToNow(new Date(item.created_at))}{" "}
-                        ago
-                      </span>
-                    </div>
-
-                    <h2 className="text-2xl font-bold group-hover:text-primary transition-colors">
-                      {post.title}
-                    </h2>
-                    <p className="text-muted-foreground line-clamp-2 text-sm">
-                      {post.content?.slice(0, 150).replace(/[#*`]/g, "")}...
-                    </p>
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                    <span className="font-medium text-primary/80">
+                      @{post.profiles.username}
+                    </span>
+                    <span>•</span>
+                    <span>
+                      Saved {formatDistanceToNow(new Date(item.created_at))} ago
+                    </span>
                   </div>
+
+                  <h2 className="text-xl md:text-2xl font-bold mb-3 group-hover:text-primary transition-colors leading-tight">
+                    {post.title}
+                  </h2>
+                  <p className="text-muted-foreground text-sm line-clamp-2 md:line-clamp-3 leading-relaxed">
+                    {post.content?.slice(0, 150).replace(/[#*`]/g, "")}...
+                  </p>
                 </div>
+
+                {post.cover_image && (
+                  <div className="w-full md:w-48 h-48 md:h-32 shrink-0 rounded-lg overflow-hidden border border-border/50 order-first md:order-last">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={post.cover_image}
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                )}
               </Link>
             );
           })}

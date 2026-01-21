@@ -7,11 +7,12 @@ import { formatDistanceToNow } from "date-fns";
 import LikeButton from "@/components/like-button";
 import CommentSection from "@/components/comment-section";
 import DeletePostButton from "@/components/delete-post-button";
+import BookmarkButton from "@/components/bookmark-button"; // Don't forget this!
 import { calculateReadTime } from "@/utils/read-time";
 import rehypeHighlight from "rehype-highlight";
 import { Clock } from "lucide-react";
-import BookmarkButton from "@/components/bookmark-button";
 
+// 1. Strict Types
 interface Post {
   id: string;
   title: string;
@@ -21,6 +22,7 @@ interface Post {
   published: boolean;
   author_id: string;
   tags: string[] | null;
+  cover_image: string | null; // <--- Added this
 }
 
 interface Author {
@@ -38,6 +40,7 @@ export default async function BlogPostPage({
   const { username, slug } = await params;
   const supabase = await createClient();
 
+  // 1. Get Author
   const { data: author } = await supabase
     .from("profiles")
     .select("*")
@@ -51,16 +54,19 @@ export default async function BlogPostPage({
   } = await supabase.auth.getUser();
   const isOwner = currentUser?.id === author.id;
 
-  const query = supabase
+  // 2. Get Post
+  const { data: postData } = await supabase
     .from("posts")
     .select("*")
     .eq("author_id", author.id)
     .eq("slug", slug)
     .single();
 
-  const { data: post } = await query;
+  if (!postData) return notFound();
 
-  if (!post) return notFound();
+  // Cast to Post type safely
+  const post = postData as Post;
+
   if (!post.published && !isOwner) return notFound();
 
   const { count: likeCount } = await supabase
@@ -93,6 +99,18 @@ function RenderPost({
 
   return (
     <article className="max-w-3xl mx-auto py-12 px-4">
+      {/* Cover Image Banner */}
+      {post.cover_image && (
+        <div className="w-full relative rounded-2xl overflow-hidden mb-10 shadow-sm border border-border/50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.cover_image}
+            alt={post.title}
+            className="w-full h-auto"
+          />
+        </div>
+      )}
+
       {/* Draft Banner */}
       {!post.published && (
         <div className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 p-4 rounded-lg mb-8 text-center">
@@ -126,7 +144,6 @@ function RenderPost({
               })}
             </time>
 
-            {/* READ TIME DISPLAY */}
             <span>•</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
@@ -153,7 +170,7 @@ function RenderPost({
               <Link
                 key={tag}
                 href={`/tags/${tag}`}
-                className="bg-secondary text-secondary-foreground px-2.5 py-1 rounded-md text-xs font-medium"
+                className="bg-secondary text-secondary-foreground px-2.5 py-1 rounded-md text-xs font-medium hover:bg-primary/20 hover:text-primary transition-colors"
               >
                 #{tag}
               </Link>
@@ -162,7 +179,7 @@ function RenderPost({
         )}
       </header>
 
-      {/* Content with Syntax Highlighting */}
+      {/* Content */}
       <div className="prose dark:prose-invert prose-lg max-w-none prose-headings:font-display prose-a:text-primary prose-pre:bg-[#282c34] prose-pre:p-0 prose-pre:overflow-hidden">
         <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
           {post.content || ""}
@@ -172,7 +189,8 @@ function RenderPost({
       <hr className="my-12 border-muted" />
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground">Thanks for reading.</p>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* Bookmark & Like Buttons */}
           <BookmarkButton postId={post.id} />
           <LikeButton postId={post.id} initialCount={likeCount} />
         </div>

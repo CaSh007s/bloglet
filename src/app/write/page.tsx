@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import CoverImageUpload from "@/components/cover-image-upload";
 
 function Editor() {
   const supabase = createClient();
@@ -27,11 +28,11 @@ function Editor() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
+  const [coverImage, setCoverImage] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [username, setUsername] = useState("user");
 
-  // 1. Load Data
   useEffect(() => {
     const load = async () => {
       const {
@@ -58,6 +59,7 @@ function Editor() {
           setSlug(data.slug);
           setContent(data.content || "");
           setTags(data.tags || []);
+          setCoverImage(data.cover_image || "");
         }
       }
       setIsFetching(false);
@@ -65,7 +67,6 @@ function Editor() {
     load();
   }, [searchParams, supabase]);
 
-  // 2. Handlers
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setTitle(val);
@@ -111,6 +112,7 @@ function Editor() {
         slug,
         content,
         tags,
+        cover_image: coverImage, // <--- 4. Save to DB
         author_id: user.id,
         updated_at: new Date().toISOString(),
         published: isPublished,
@@ -179,12 +181,17 @@ function Editor() {
           className={`flex-1 overflow-y-auto transition-all duration-300 ${showPreview ? "hidden md:flex" : "flex"}`}
         >
           <div className="max-w-2xl mx-auto w-full py-12 px-6 flex flex-col">
+            {/* 5. Render Upload Component*/}
+            <CoverImageUpload url={coverImage} onUpload={setCoverImage} />
+
             <input
               placeholder="Title"
               className="text-4xl md:text-5xl font-display font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/30 mb-6 w-full"
               value={title}
               onChange={handleTitleChange}
             />
+
+            {/* Slug & Tags Section */}
             <div className="group flex flex-col gap-4 mb-8 bg-muted/20 p-4 rounded-xl border border-transparent focus-within:border-border transition-colors">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <TooltipProvider>
@@ -232,27 +239,31 @@ function Editor() {
                 />
               </div>
             </div>
+
             <Textarea
               placeholder="Tell your story..."
-              className="
-    flex-1 resize-none border-none shadow-none focus-visible:ring-0 px-0
-    text-lg md:text-xl leading-relaxed font-serif
-    text-foreground/90 bg-transparent min-h-[500px]
-
-    placeholder:text-center
-    placeholder:italic
-    placeholder:text-muted-foreground
-  "
+              className="flex-1 resize-none border-none shadow-none focus-visible:ring-0 px-0 text-lg md:text-xl leading-relaxed font-serif text-foreground/90 bg-transparent min-h-[500px]"
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
           </div>
         </div>
+
         {/* PREVIEW AREA */}
         <div
           className={`flex-1 border-l border-border/40 bg-muted/5 overflow-y-auto ${showPreview ? "flex" : "hidden md:block"}`}
         >
           <div className="max-w-2xl mx-auto py-12 px-8 prose dark:prose-invert prose-lg prose-headings:font-display">
+            {/* Preview the Cover Image */}
+            {coverImage && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverImage}
+                alt="Cover"
+                className="w-full h-auto rounded-xl mb-8 object-cover shadow-sm border border-border/50"
+              />
+            )}
+
             <h1 className="mb-2">{title || "Untitled Story"}</h1>
             {tags.length > 0 && (
               <div className="flex gap-2 mb-8 not-prose">

@@ -1,11 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
-import { FileQuestion } from "lucide-react";
+import { FileQuestion, Calendar } from "lucide-react";
 import SearchBar from "@/components/search-bar";
 
-// Define the shape of a search result
 interface SearchPost {
   id: string;
   title: string;
@@ -14,6 +12,7 @@ interface SearchPost {
   content: string | null;
   published: boolean;
   tags: string[] | null;
+  cover_image: string | null;
   profiles: {
     username: string;
     full_name: string | null;
@@ -37,18 +36,8 @@ export default async function SearchPage({
       .from("posts")
       .select(
         `
-        id,
-        title,
-        slug,
-        created_at,
-        content,
-        published,
-        tags,
-        profiles (
-          username,
-          full_name,
-          avatar_url
-        )
+        id, title, slug, created_at, content, published, tags, cover_image,
+        profiles ( username, full_name, avatar_url )
       `,
       )
       .eq("published", true)
@@ -63,12 +52,9 @@ export default async function SearchPage({
     <div className="max-w-4xl mx-auto py-12 px-6 min-h-[80vh]">
       <div className="max-w-2xl mx-auto text-center mb-12 space-y-6">
         <h1 className="text-4xl font-display font-bold">Search Stories</h1>
-
-        {/* The Live Search Bar */}
         <SearchBar />
       </div>
 
-      {/* Results Area */}
       {query ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 pl-1">
@@ -81,35 +67,43 @@ export default async function SearchPage({
             <Link
               key={post.id}
               href={`/${post.profiles.username}/${post.slug}`}
-              className="group block p-6 rounded-xl border border-border/50 bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-md"
+              className="group flex flex-col md:flex-row gap-6 p-6 rounded-xl border border-border/40 bg-card hover:border-primary/50 transition-all duration-300 hover:bg-muted/5"
             >
-              <div className="flex items-start justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={post.profiles.avatar_url || ""} />
-                      <AvatarFallback>
-                        {post.profiles.username[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium text-foreground">
-                      {post.profiles.full_name || post.profiles.username}
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {formatDistanceToNow(new Date(post.created_at))} ago
-                    </span>
-                  </div>
-
-                  <h2 className="text-xl font-bold group-hover:text-primary transition-colors">
-                    {post.title}
-                  </h2>
-
-                  <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
-                    {post.content?.slice(0, 150).replace(/[#*`]/g, "")}...
-                  </p>
+              {/* Text Side */}
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                  {/* Show Author Name in Search results (important context) */}
+                  <span className="font-medium text-primary/80">
+                    @{post.profiles.username}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {formatDistanceToNow(new Date(post.created_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
                 </div>
+
+                <h2 className="text-xl md:text-2xl font-bold mb-3 group-hover:text-primary transition-colors leading-tight">
+                  {post.title}
+                </h2>
+
+                <p className="text-muted-foreground text-sm line-clamp-2 md:line-clamp-3 leading-relaxed">
+                  {post.content?.slice(0, 150).replace(/[#*`]/g, "")}...
+                </p>
               </div>
+
+              {/* Image Side */}
+              {post.cover_image && (
+                <div className="w-full md:w-48 h-48 md:h-32 shrink-0 rounded-lg overflow-hidden border border-border/50 order-first md:order-last">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.cover_image}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+              )}
             </Link>
           ))}
 
@@ -117,12 +111,10 @@ export default async function SearchPage({
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground opacity-50 bg-muted/10 rounded-xl border border-dashed">
               <FileQuestion className="w-12 h-12 mb-4" />
               <p className="text-lg">No matching stories found.</p>
-              <p className="text-sm">Try searching for a different keyword.</p>
             </div>
           )}
         </div>
       ) : (
-        // Empty State (Before typing)
         <div className="flex flex-col items-center justify-center py-20 opacity-30">
           <div className="text-6xl mb-4">🔍</div>
           <p className="font-display text-xl">Type to discover stories...</p>
