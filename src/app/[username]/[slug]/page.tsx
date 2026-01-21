@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import LikeButton from "@/components/like-button";
+import CommentSection from "@/components/comment-section";
 
-// 1. Types
 interface Post {
   id: string;
   title: string;
@@ -31,7 +31,6 @@ export default async function BlogPostPage({
   const { username, slug } = await params;
   const supabase = await createClient();
 
-  // 2. Fetch Author
   const { data: author } = await supabase
     .from("profiles")
     .select("*")
@@ -40,7 +39,6 @@ export default async function BlogPostPage({
 
   if (!author) return notFound();
 
-  // 3. Fetch Post
   const { data: post } = await supabase
     .from("posts")
     .select("*")
@@ -49,7 +47,6 @@ export default async function BlogPostPage({
     .eq("published", true)
     .single();
 
-  // 4. Draft Security Logic
   if (!post) {
     const {
       data: { user: currentUser },
@@ -81,7 +78,6 @@ export default async function BlogPostPage({
     return notFound();
   }
 
-  // 5. Fetch Like Count
   const { count: likeCount } = await supabase
     .from("likes")
     .select("*", { count: "exact", head: true })
@@ -103,8 +99,6 @@ function RenderPost({
 }) {
   return (
     <article className="max-w-3xl mx-auto py-12 px-4">
-      {/* Banner is gone! */}
-
       {isDraft && (
         <div className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 p-4 rounded-lg mb-8 text-center">
           This is a private draft. Only you can see this.
@@ -149,6 +143,8 @@ function RenderPost({
           <LikeButton postId={post.id} initialCount={likeCount} />
         </div>
       </div>
+
+      <CommentSection postId={post.id} />
     </article>
   );
 }

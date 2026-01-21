@@ -21,13 +21,13 @@ function Editor() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 1. Load Data if editing
+  // 1. Load Data if editing an existing post
   useEffect(() => {
     const editSlug = searchParams.get("slug");
 
     if (editSlug) {
       const fetchPost = async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("posts")
           .select("*")
           .eq("slug", editSlug)
@@ -44,7 +44,8 @@ function Editor() {
     }
   }, [searchParams, supabase]);
 
-  const handleSave = async () => {
+  // 2. LOGIC: Handle Publish vs Draft
+  const handleSave = async (isPublished: boolean) => {
     setLoading(true);
     const {
       data: { user },
@@ -56,6 +57,12 @@ function Editor() {
       return;
     }
 
+    if (isPublished && (!title || !slug || !content)) {
+      alert("You need a title, slug, and content to publish!");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("posts").upsert(
       {
         title,
@@ -63,18 +70,34 @@ function Editor() {
         content,
         author_id: user.id,
         updated_at: new Date().toISOString(),
+        published: isPublished,
       },
       { onConflict: "author_id, slug" },
     );
 
-    setLoading(false);
-
     if (error) {
       alert("Error: " + error.message);
+      setLoading(false);
     } else {
-      alert("Saved!");
-      if (!searchParams.get("slug")) {
-        router.push(`/write?slug=${slug}`);
+      if (isPublished) {
+        // 1. Fetch real username silently
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .single();
+
+        const correctUsername = profile?.username || "user";
+
+        // 2. Success & Redirect
+        alert("🎉 Published! Your post is live.");
+        router.push(`/${correctUsername}/${slug}`);
+      } else {
+        alert("Draft saved.");
+        setLoading(false);
+        if (!searchParams.get("slug")) {
+          router.push(`/write?slug=${slug}`);
+        }
       }
     }
   };
@@ -92,10 +115,18 @@ function Editor() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-display font-bold">Editor</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSave} disabled={loading}>
+          {/* Save Draft Button */}
+          <Button
+            variant="outline"
+            onClick={() => handleSave(false)}
+            disabled={loading}
+          >
             {loading ? "Saving..." : "Save Draft"}
           </Button>
-          <Button disabled>Publish</Button>
+          {/* Publish Button */}
+          <Button onClick={() => handleSave(true)} disabled={loading}>
+            {loading ? "Publishing..." : "Publish"}
+          </Button>
         </div>
       </div>
 
@@ -143,7 +174,6 @@ function Editor() {
   );
 }
 
-// 2. Wrap in Suspense boundary
 export default function WritePage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
