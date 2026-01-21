@@ -1,2 +1,1 @@
-update posts 
-set published = true;
+truncate table posts, comments, likes cascade;
