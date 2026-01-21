@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, Calendar } from "lucide-react";
+import { getExcerpt } from "@/utils/format-content";
 
 interface ProfilePost {
   id: string;
@@ -118,7 +119,7 @@ export default async function ProfilePage({
                   </h3>
 
                   <p className="text-muted-foreground text-sm line-clamp-2 md:line-clamp-3 leading-relaxed">
-                    {post.content?.slice(0, 150).replace(/[#*`]/g, "")}...
+                    {getExcerpt(post.content, 150)}
                   </p>
                 </div>
 

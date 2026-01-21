@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation"; // <--- Added this import
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,14 @@ export default async function AuthButton() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // 👇 The Fix: Define the Server Action here
+  const signOut = async () => {
+    "use server";
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    return redirect("/");
+  };
 
   if (!user) {
     return (
@@ -101,8 +110,8 @@ export default async function AuthButton() {
 
         <DropdownMenuSeparator />
 
-        <form action="/auth/signout" method="post">
-          <button className="w-full">
+        <form action={signOut} className="w-full">
+          <button type="submit" className="w-full text-left">
             <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">
               <LogOut className="mr-2 h-4 w-4" />
               Sign out

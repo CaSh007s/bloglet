@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { FileQuestion, Calendar } from "lucide-react";
 import SearchBar from "@/components/search-bar";
+import { getExcerpt } from "@/utils/format-content";
 
 interface SearchPost {
   id: string;
@@ -89,7 +90,7 @@ export default async function SearchPage({
                 </h2>
 
                 <p className="text-muted-foreground text-sm line-clamp-2 md:line-clamp-3 leading-relaxed">
-                  {post.content?.slice(0, 150).replace(/[#*`]/g, "")}...
+                  {getExcerpt(post.content, 150)}
                 </p>
               </div>
 

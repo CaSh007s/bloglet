@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { calculateReadTime } from "@/utils/read-time";
 import { Clock } from "lucide-react";
+import { getExcerpt } from "@/utils/format-content";
 
 export const revalidate = 0;
 
@@ -78,7 +79,7 @@ export default async function Home() {
               </h2>
 
               <p className="text-muted-foreground text-sm line-clamp-2 md:line-clamp-3 leading-relaxed mb-4">
-                {post.content?.slice(0, 200).replace(/[#*`]/g, "")}...
+                {getExcerpt(post.content, 200)}
               </p>
 
               {/* Tags (Only show if there's space, or keep them small) */}
