@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { FileQuestion, Calendar } from "lucide-react";
+import { FileQuestion } from "lucide-react";
 import SearchBar from "@/components/search-bar";
 import { getExcerpt } from "@/utils/format-content";
 
@@ -42,7 +42,8 @@ export default async function SearchPage({
       `,
       )
       .eq("published", true)
-      .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+      // FIX: Only search the Title to prevent noisy matches from the body content
+      .ilike("title", `%${query}%`)
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -73,7 +74,6 @@ export default async function SearchPage({
               {/* Text Side */}
               <div className="flex-1 flex flex-col justify-center">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                  {/* Show Author Name in Search results (important context) */}
                   <span className="font-medium text-primary/80">
                     @{post.profiles.username}
                   </span>
