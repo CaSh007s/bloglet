@@ -5,7 +5,14 @@ import { login, signup } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2, Github, AlertCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Github,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import AuthMascot from "./auth-mascot";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
@@ -20,23 +27,30 @@ export default function AuthForm({ mode }: AuthFormProps) {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); // New Error State
 
-  // 1. Handle Form Submission
+  // State for messages
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
+    setSuccess(null);
 
-    // Choose the right action
     const action = mode === "login" ? login : signup;
 
-    // Call server action and wait for result
-    const errorMessage = await action(formData);
+    // Call the server action
+    const response = await action(formData);
 
-    if (errorMessage) {
-      setError(errorMessage);
-      setIsLoading(false);
-    } else {
+    setIsLoading(false);
+
+    // Handle Response
+    if (response) {
+      if (response.error) {
+        setError(response.error);
+      } else if (response.success) {
+        setSuccess(response.success);
+      }
     }
   };
 
@@ -64,8 +78,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </p>
       </div>
 
-      {/* Pass the wrapper function to the form action */}
       <form action={handleSubmit} className="space-y-6">
+        {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -80,6 +94,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           />
         </div>
 
+        {/* Password */}
         <div className="space-y-2 relative">
           <div className="flex justify-between items-center">
             <Label htmlFor="password">Password</Label>
@@ -116,11 +131,18 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         </div>
 
-        {/* ERROR DISPLAY */}
+        {/* MESSAGES AREA */}
         {error && (
-          <div className="flex items-center gap-2 text-sm text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-500/10 p-3 rounded-lg border border-red-500/20 animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="flex items-center gap-2 text-sm text-green-600 bg-green-500/10 p-3 rounded-lg border border-green-500/20 animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{success}</span>
           </div>
         )}
 

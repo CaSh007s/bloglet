@@ -4,7 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
-export async function login(formData: FormData) {
+// 1. Define the standard response type
+type ActionResponse = {
+  error?: string;
+  success?: string;
+};
+
+export async function login(
+  formData: FormData,
+): Promise<ActionResponse | void> {
   const supabase = await createClient();
 
   const email = formData.get("email") as string;
@@ -16,14 +24,14 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    return error.message;
+    return { error: error.message };
   }
 
   revalidatePath("/", "layout");
   redirect("/");
 }
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
 
   const email = formData.get("email") as string;
@@ -33,14 +41,13 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
     },
   });
 
   if (error) {
-    return error.message;
+    return { error: error.message };
   }
 
-  revalidatePath("/", "layout");
-  redirect("/");
+  return { success: "Account created! Please check your email to confirm." };
 }
