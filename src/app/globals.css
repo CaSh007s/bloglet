@@ -77,7 +77,7 @@
   }
 }
 
-/* Custom Scrollbar (Optional Quality of Life) */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
 }

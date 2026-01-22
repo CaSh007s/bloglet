@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -35,8 +35,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 🔒 PROTECTED ROUTES
-  // If guest tries to access these, send them to Login
+  // PROTECTED ROUTES
   const protectedRoutes = ["/write", "/bookmarks", "/settings", "/feed"];
   const isProtected = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route),

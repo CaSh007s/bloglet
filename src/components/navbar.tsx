@@ -11,83 +11,57 @@ export default async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return (
-      <nav className="fixed top-0 z-50 w-full transition-all duration-300">
-        <div className="flex h-20 items-center justify-between px-8 max-w-7xl mx-auto">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-2xl font-bold tracking-tighter text-white hover:text-white/80 transition-colors"
-          >
-            <div className="bg-white/10 p-2 rounded-lg backdrop-blur-md border border-white/10">
-              <Feather className="h-5 w-5" />
-            </div>
-            <span>Bloglet.</span>
-          </Link>
-
-          {/* Guest Actions */}
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                className="text-white hover:bg-white/10 hover:text-white"
-              >
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button className="rounded-full bg-white text-black hover:bg-gray-200">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-    );
-  }
-
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-8 max-w-7xl mx-auto">
+        {/* LOGO */}
         <Link
           href="/"
-          className="flex items-center gap-2 font-display text-2xl font-bold tracking-tighter transition-all duration-300 hover:text-primary hover:tracking-wide"
+          className="flex items-center gap-2 font-display text-2xl font-bold tracking-tighter transition-all duration-300 hover:text-primary hover:tracking-wide group"
         >
-          <div className="bg-primary/10 p-2 rounded-lg text-primary">
+          <div className="bg-primary/10 p-2 rounded-lg text-primary group-hover:bg-primary/20 transition-colors">
             <Feather className="h-5 w-5" />
           </div>
           <span>
-            Bloglet<span className="text-primary">.</span>
+            Bloglet
+            <span className="text-primary transition-all duration-300">.</span>
           </span>
         </Link>
 
-        {/* Right Side Actions */}
+        {/* Actions */}
         <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/search">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-          </Link>
-
-          <Link href="/write">
-            <Button className="hidden md:flex gap-2 font-semibold shadow-sm rounded-full px-6">
-              <PenLine className="h-4 w-4" />
-              Write
-            </Button>
-            <Button size="icon" className="md:hidden rounded-full">
-              <PenLine className="h-4 w-4" />
-            </Button>
-          </Link>
+          {user ? (
+            /* Logged In */
+            <>
+              <Link href="/search">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/write">
+                <Button className="hidden md:flex gap-2 font-semibold shadow-sm rounded-full px-6">
+                  <PenLine className="h-4 w-4" />
+                  Write
+                </Button>
+                <Button size="icon" className="md:hidden rounded-full">
+                  <PenLine className="h-4 w-4" />
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <Link href="/login">
+              <Button className="rounded-full px-6">Get Started</Button>
+            </Link>
+          )}
 
           <div className="h-6 w-px bg-border/50 mx-1" />
 
           <ModeToggle />
-          <AuthButton />
+          {user && <AuthButton />}
         </div>
       </div>
     </nav>

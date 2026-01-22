@@ -1,114 +1,94 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Github, Feather, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function LandingPage() {
+  const [text, setText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [loopNum, setLoopNum] = useState(0);
+  const [typingSpeed, setTypingSpeed] = useState(150);
+
+  const phrases = ["Bloglet.", "Just write."];
+
+  useEffect(() => {
+    const handleTyping = () => {
+      const i = loopNum % phrases.length;
+      const fullText = phrases[i];
+
+      setText(
+        isDeleting
+          ? fullText.substring(0, text.length - 1)
+          : fullText.substring(0, text.length + 1),
+      );
+
+      setTypingSpeed(isDeleting ? 80 : 150);
+
+      if (!isDeleting && text === fullText) {
+        setTimeout(() => setIsDeleting(true), 1500); // Pause at end
+      } else if (isDeleting && text === "") {
+        setIsDeleting(false);
+        setLoopNum(loopNum + 1);
+      }
+    };
+
+    const timer = setTimeout(handleTyping, typingSpeed);
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, loopNum, typingSpeed, phrases]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a0a] text-white overflow-hidden relative selection:bg-amber-500/30">
-      {/* BACKGROUND TEXTURE */}
-      <div className="fixed inset-0 z-0 opacity-20 pointer-events-none">
-        <svg className="w-full h-full">
-          <filter id="noise">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.8"
-              numOctaves="3"
-              stitchTiles="stitch"
-            />
-            <feColorMatrix type="saturate" values="0" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#noise)" />
-        </svg>
-      </div>
-
-      {/* HERO SECTION */}
-      <main className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 pt-20 pb-32">
-        {/* Abstract Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-amber-500/10 via-purple-500/5 to-transparent rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto text-center space-y-12 animate-in fade-in zoom-in duration-1000">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-sm font-medium text-white/70 cursor-default">
-            <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-            The new standard for writers
-          </div>
-
-          <h1 className="text-6xl md:text-8xl font-display font-bold tracking-tight leading-[1.1] md:leading-[0.9]">
-            Unfold your <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-600 relative">
-              wildest stories.
-              <svg
-                className="absolute -bottom-4 left-0 w-full h-4 text-amber-500/50"
-                viewBox="0 0 100 10"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M0 5 Q 50 10 100 5"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  fill="none"
-                />
-              </svg>
-            </span>
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-500 selection:bg-primary/20">
+      {/* 1. HERO SECTION */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 relative">
+        <div className="max-w-4xl mx-auto text-center space-y-10 md:space-y-14">
+          {/* The Animated Headline */}
+          <h1 className="h-24 md:h-40 text-6xl md:text-9xl font-serif font-medium tracking-tight leading-none text-foreground flex items-center justify-center">
+            <span>{text}</span>
+            <span className="w-1 md:w-3 h-12 md:h-24 bg-primary ml-1 animate-pulse" />
           </h1>
 
-          <p className="text-xl md:text-2xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-            A minimal, distraction-free space where your thoughts turn into
-            timeless content. No clutter. Just you and the page.
+          {/* The Subtext */}
+          <p className="text-lg md:text-xl text-muted-foreground font-light max-w-lg mx-auto leading-relaxed">
+            The noise stops here. A digital sanctuary for your thoughts,
+            stories, and ideas.
           </p>
 
-          {/* CTA Buttons - Fixed Links */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+          {/* The Action */}
+          <div className="pt-6 flex flex-col items-center gap-5">
             <Link href="/login">
               <Button
                 size="lg"
-                className="h-14 px-8 text-lg rounded-full bg-white text-black hover:bg-gray-200 hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] border-0"
+                className="h-14 px-10 text-lg rounded-full shadow-xl shadow-primary/10 hover:shadow-primary/20 transition-all hover:scale-105"
               >
                 Start Writing <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
-            <Link href="https://github.com/CaSh007s/bloglet" target="_blank">
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 text-lg rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 hover:border-white transition-all duration-300"
-              >
-                <Github className="mr-2 w-5 h-5" />
-                Star on GitHub
-              </Button>
+
+            <Link
+              href="https://github.com/CaSh007s/bloglet"
+              target="_blank"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors border-b border-transparent hover:border-foreground"
+            >
+              Open Source on GitHub
             </Link>
           </div>
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-white/10 bg-black/40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-white/80">
-            <div className="bg-white/10 p-2 rounded-lg">
-              <Feather className="w-5 h-5" />
-            </div>
-            <span className="font-display font-bold text-xl">Bloglet.</span>
-          </div>
-
-          <div className="flex gap-8 text-sm text-white/50">
-            <Link href="#" className="hover:text-white transition-colors">
-              Terms of Service
-            </Link>
-            <Link href="#" className="hover:text-white transition-colors">
-              Privacy Policy
-            </Link>
-            <Link
-              href="https://github.com/CaSh007s"
-              target="_blank"
-              className="hover:text-white transition-colors"
-            >
-              Creator
-            </Link>
-          </div>
-
-          <div className="text-sm text-white/30">
-            © 2026 Bloglet Inc. All rights reserved.
-          </div>
-        </div>
+      {/* 2. MINIMAL FOOTER */}
+      <footer className="py-8 text-center text-xs text-muted-foreground/50 space-x-8 select-none">
+        <span>&copy; {new Date().getFullYear()} Bloglet</span>
+        <Link
+          href="/privacy"
+          className="hover:text-foreground transition-colors"
+        >
+          Privacy
+        </Link>
+        <Link href="/terms" className="hover:text-foreground transition-colors">
+          Terms
+        </Link>
       </footer>
     </div>
   );
