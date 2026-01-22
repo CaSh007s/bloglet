@@ -49,5 +49,5 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
     return { error: error.message };
   }
 
-  return { success: "Account created! Please check your email to confirm." };
+  return { success: "Account created! Please proceed to login." };
 }
